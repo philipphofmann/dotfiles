@@ -1,0 +1,46 @@
+# Ghostty config for cmux.
+# cmux embeds Ghostty as its terminal engine and reads colors, fonts, and
+# transparency from this file. Run `cmux reload-config` after editing.
+# Colors mirror the coolnight scheme in dotfiles/wezterm/.wezterm.lua.
+
+# Font
+font-family = MesloLGS Nerd Font Mono
+font-size = 13
+
+# Window transparency, matches wezterm window_background_opacity + blur
+background-opacity = 0.9
+background-blur = true
+
+# German keyboard. Left Option stays Meta, right Option (AltGr) composes
+# symbols like | \ @ { [ ~. Matches send_composed_key_when_right_alt_is_pressed.
+macos-option-as-alt = left
+
+# coolnight colorscheme
+foreground = #CBE0F0
+background = #011423
+
+cursor-color = #47FF9C
+cursor-text = #011423
+
+selection-background = #033259
+selection-foreground = #CBE0F0
+
+# ansi 0-7
+palette = 0=#214969
+palette = 1=#E52E2E
+palette = 2=#44FFB1
+palette = 3=#FFE073
+palette = 4=#0FC5ED
+palette = 5=#A277FF
+palette = 6=#24EAF7
+palette = 7=#24EAF7
+
+# brights 8-15
+palette = 8=#214969
+palette = 9=#E52E2E
+palette = 10=#44FFB1
+palette = 11=#FFE073
+palette = 12=#A277FF
+palette = 13=#A277FF
+palette = 14=#24EAF7
+palette = 15=#24EAF7
