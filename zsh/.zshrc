@@ -177,3 +177,78 @@ function yy() {
 	fi
 	y "$@"
 }
+
+# ---- Remote mounts on juck (SSHFS over FUSE-T) ----
+# juck (129.69.168.22) is only reachable on the uni network or via VPN, like
+# the LS3 SMB shares handled by ~/.local/bin/mount-ls3-shares.sh. Files live
+# only on the server, nothing is copied to the local disk. Mountpoints live
+# under ~/mnt, which we own, so the helper creates them automatically. We stay
+# out of /Volumes because macOS deletes empty mountpoints there on unmount.
+#
+# Shared helpers. $1 = mountpoint name under ~/mnt, $2 = absolute path on juck.
+_juck_mount() {
+	local name="$1" remote="$2" mnt="$HOME/mnt/$1"
+	if mount | grep -q " on $mnt "; then
+		echo "$name already mounted at $mnt"
+		return 0
+	fi
+	if ! ssh -o BatchMode=yes -o ConnectTimeout=4 juck true 2>/dev/null; then
+		echo "Cannot reach juck over SSH. Connect to the uni network or VPN, then retry."
+		return 1
+	fi
+	if ! mkdir -p "$mnt"; then
+		echo "Could not create mountpoint $mnt."
+		return 1
+	fi
+	if sshfs "juck:$remote" "$mnt" \
+		-o reconnect,ServerAliveInterval=15,ServerAliveCountMax=3,volname="$name"; then
+		echo "$name mounted at $mnt"
+	else
+		echo "Mount failed."
+		return 1
+	fi
+}
+
+_juck_unmount() {
+	local name="$1" mnt="$HOME/mnt/$1"
+	if ! mount | grep -q " on $mnt "; then
+		echo "$name not mounted"
+		return 0
+	fi
+	umount "$mnt" 2>/dev/null || diskutil unmount force "$mnt" >/dev/null 2>&1
+	if mount | grep -q " on $mnt "; then
+		echo "Unmount failed. Something may still be using $mnt."
+		return 1
+	fi
+	rmdir "$mnt" 2>/dev/null
+	echo "$name unmounted"
+}
+
+# juck home directory -> ~/mnt/juck
+mount-juck()   { _juck_mount   juck /data/homes/hoffmann }
+unmount-juck() { _juck_unmount juck }
+
+# enbw-water project (the ~/enbw-water symlink target) -> ~/mnt/enbw-water
+mount-enbw-water()   { _juck_mount   enbw-water /data/projects/enbw-water }
+unmount-enbw-water() { _juck_unmount enbw-water }
+
+# Run a command on juck and bring its output back here. Usage:
+#   juck-run <remote-dir> <command...>
+# <remote-dir> is relative to your juck home (e.g. tapfn-test, or enbw-water via
+# the ~/enbw-water symlink) or absolute. Runs in a login shell so the server
+# profile (PATH, conda/uv, TABPFN_TOKEN) is loaded, with stderr merged into
+# stdout so errors come back too. Pass a multi-word command as one quoted string.
+# For long jobs, detach on the server and watch the log through the mount, e.g.
+#   juck-run tapfn-test 'nohup python3 train.py > run.log 2>&1 & echo started'
+juck-run() {
+	if [ $# -lt 2 ]; then
+		echo "usage: juck-run <remote-dir> <command...>"
+		return 2
+	fi
+	if ! ssh -o BatchMode=yes -o ConnectTimeout=4 juck true 2>/dev/null; then
+		echo "Cannot reach juck over SSH. Connect to the uni network or VPN, then retry."
+		return 1
+	fi
+	local dir="$1"; shift
+	ssh juck "bash -lc 'cd \"$dir\" && $*' 2>&1"
+}
