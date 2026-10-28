@@ -14,7 +14,7 @@ Based on [Josean Martinez's dev environment](https://github.com/josean-dev/dev-e
 ## Quick start on a new machine
 
 ```bash
-git clone https://github.com/phil-c137/dotfiles.git ~/dotfiles
+git clone https://github.com/philipphofmann/dotfiles.git ~/dotfiles
 cd ~/dotfiles
 ./install.sh
 ```
